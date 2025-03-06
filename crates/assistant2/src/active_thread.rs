@@ -510,10 +510,11 @@ impl ActiveThread {
                         .key_context("EditMessageEditor")
                         .on_action(cx.listener(Self::cancel_editing_message))
                         .on_action(cx.listener(Self::confirm_editing_message))
+                        .min_h_11()
                         .p_2p5()
                         .child(edit_message_editor)
                 } else {
-                    div().p_2p5().text_ui(cx).child(markdown.clone())
+                    div().min_h_11().p_2p5().text_ui(cx).child(markdown.clone())
                 },
             )
             .when_some(context, |parent, context| {
@@ -636,6 +637,10 @@ impl ActiveThread {
                 ),
             Role::Assistant => div()
                 .id(("message-container", ix))
+                .when(
+                    edit_message_editor.is_some() && self.last_user_message(cx).is_some(),
+                    |parent| parent.opacity(0.4),
+                )
                 .child(message_content)
                 .map(|parent| {
                     if tool_uses.is_empty() {
