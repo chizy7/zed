@@ -184,6 +184,14 @@ impl ActiveThread {
             selection_background_color: cx.theme().players().local().selection,
             code_block_overflow_x_scroll: true,
             table_overflow_x_scroll: true,
+            heading: StyleRefinement {
+                text: Some(TextStyleRefinement {
+                    // Apply a 0.85 scaling factor to reduce all heading sizes proportionally
+                    font_size: Some(AbsoluteLength::Rems(rems(0.9))),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
             code_block: StyleRefinement {
                 margin: EdgesRefinement {
                     top: Some(Length::Definite(rems(0.).into())),
@@ -530,7 +538,7 @@ impl ActiveThread {
                 .child(
                     v_flex()
                         .bg(colors.editor_background)
-                        .rounded_lg()
+                        .rounded_md()
                         .border_1()
                         .border_color(colors.border)
                         .shadow_sm()
@@ -645,7 +653,7 @@ impl ActiveThread {
             Role::System => div().id(("message-container", ix)).py_1().px_2().child(
                 v_flex()
                     .bg(colors.editor_background)
-                    .rounded_md()
+                    .rounded_sm()
                     .child(message_content),
             ),
         };
@@ -662,8 +670,7 @@ impl ActiveThread {
 
         div().px_2p5().child(
             v_flex()
-                .gap_1()
-                .rounded_lg()
+                .rounded_md()
                 .border_1()
                 .border_color(cx.theme().colors().border)
                 .child(
@@ -672,9 +679,9 @@ impl ActiveThread {
                         .py_0p5()
                         .pl_1()
                         .pr_2()
-                        .bg(cx.theme().colors().editor_foreground.opacity(0.02))
-                        .when(is_open, |element| element.border_b_1().rounded_t(px(6.)))
-                        .when(!is_open, |element| element.rounded(px(6.)))
+                        .bg(cx.theme().colors().editor_foreground.opacity(0.015))
+                        .when(is_open, |element| element.border_b_1().rounded_t_md())
+                        .when(!is_open, |element| element.rounded_md())
                         .border_color(cx.theme().colors().border)
                         .child(
                             h_flex()
@@ -692,7 +699,21 @@ impl ActiveThread {
                                         }
                                     }),
                                 ))
-                                .child(Label::new(tool_use.name)),
+                                .child(Label::new("Called tool:"))
+                                .child(
+                                    h_flex()
+                                        .px_1()
+                                        .pb(px(2.))
+                                        .h_4()
+                                        // .rounded_xs()
+                                        .rounded(px(2.))
+                                        .bg(cx.theme().colors().text_accent.opacity(0.08))
+                                        .child(
+                                            Label::new(tool_use.name)
+                                                .size(LabelSize::Small)
+                                                .buffer_font(cx),
+                                        ),
+                                ),
                         )
                         .child(
                             Label::new(match tool_use.status {
@@ -702,6 +723,7 @@ impl ActiveThread {
                                 ToolUseStatus::Error(_) => "Error",
                             })
                             .size(LabelSize::XSmall)
+                            .color(Color::Muted)
                             .buffer_font(cx),
                         ),
                 )
@@ -710,35 +732,44 @@ impl ActiveThread {
                         return parent;
                     }
 
+                    let editor_bg = cx.theme().colors().editor_background;
+                    let title_container = || h_flex().bg(editor_bg).absolute().top_1().right_2();
+                    let content_container = || v_flex().relative().gap_0p5().py_1().px_2p5();
+
                     parent.child(
                         v_flex()
+                            .bg(editor_bg)
+                            .rounded_b_lg()
                             .child(
-                                v_flex()
-                                    .gap_0p5()
-                                    .py_1()
-                                    .px_2p5()
+                                content_container()
                                     .border_b_1()
                                     .border_color(cx.theme().colors().border)
-                                    .child(Label::new("Input:"))
                                     .child(Label::new(
                                         serde_json::to_string_pretty(&tool_use.input)
                                             .unwrap_or_default(),
-                                    )),
+                                    ))
+                                    .child(
+                                        title_container().child(
+                                            Label::new("Input")
+                                                .size(LabelSize::XSmall)
+                                                .color(Color::Muted)
+                                                .buffer_font(cx),
+                                        ),
+                                    ),
                             )
                             .map(|parent| match tool_use.status {
                                 ToolUseStatus::Finished(output) => parent.child(
-                                    v_flex()
-                                        .gap_0p5()
-                                        .py_1()
-                                        .px_2p5()
-                                        .child(Label::new("Result:"))
-                                        .child(Label::new(output)),
+                                    content_container().child(Label::new(output)).child(
+                                        title_container().child(
+                                            Label::new("Result")
+                                                .size(LabelSize::XSmall)
+                                                .color(Color::Muted)
+                                                .buffer_font(cx),
+                                        ),
+                                    ),
                                 ),
                                 ToolUseStatus::Error(err) => parent.child(
-                                    v_flex()
-                                        .gap_0p5()
-                                        .py_1()
-                                        .px_2p5()
+                                    content_container()
                                         .child(Label::new("Error:"))
                                         .child(Label::new(err)),
                                 ),
